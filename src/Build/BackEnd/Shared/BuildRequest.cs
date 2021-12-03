@@ -348,6 +348,18 @@ namespace Microsoft.Build.BackEnd
             set => _requestedProjectState = value;
         }
 
+        public string[] InputCacheFiles
+        {
+            get => _inputCacheFiles;
+            set => _inputCacheFiles = value;
+        }
+
+        public string OutputCacheFile
+        {
+            get => _outputCacheFile;
+            set => _outputCacheFile = value;
+        }
+
         /// <summary>
         /// The route for host-aware tasks back to the host
         /// </summary>
@@ -359,6 +371,8 @@ namespace Microsoft.Build.BackEnd
         }
 
         private HostServices _hostServices;
+        private string[] _inputCacheFiles;
+        private string _outputCacheFile;
 
         /// <summary>
         /// Returns true if this is a root request (one which has no parent.)
@@ -406,6 +420,8 @@ namespace Microsoft.Build.BackEnd
             translator.Translate(ref _requestedProjectState);
             translator.Translate(ref _hostServices);
             translator.Translate(ref _proxyTargets, ProxyTargets.FactoryForDeserialization);
+            translator.Translate(ref _inputCacheFiles);
+            translator.Translate(ref _outputCacheFile);
 
             // UNDONE: (Compat) Serialize the host object.
         }

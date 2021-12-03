@@ -9,6 +9,8 @@ using Microsoft.Build.Shared;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ProjectLoggingContext = Microsoft.Build.BackEnd.Logging.ProjectLoggingContext;
@@ -132,12 +134,18 @@ namespace Microsoft.Build.BackEnd
 
             _buildResult = new BuildResult(entry.Request, existingBuildResult, null);
 
+
             if (existingBuildResult == null)
             {
                 // Add this result so that if our project gets re-entered we won't rebuild any targets we have already built.
                 resultsCache.AddResult(_buildResult);
             }
 
+            if (entry.Request.InputCacheFiles != null)
+            {
+                UpdateCache(entry.Request.InputCacheFiles);
+            }
+            
             List<TargetSpecification> targets = new List<TargetSpecification>(targetNames.Length);
 
             foreach (string targetName in targetNames)
@@ -198,7 +206,79 @@ namespace Microsoft.Build.BackEnd
 
             configuration.IsCacheable = previousCacheableStatus;
 
+            // Save to cache as requested
+            if (_requestEntry.Request.OutputCacheFile != null)
+            {
+                IConfigCache existingConfigCache = (IConfigCache)_componentHost.GetComponent(BuildComponentType.ConfigCache);
+
+                var localConfigCache = new ConfigCache();
+                localConfigCache.AddConfiguration(existingConfigCache[_buildResult.ConfigurationId]);
+
+                var localResultCache = new ResultsCache();
+                var result = new BuildResult(_requestEntry.Request, _buildResult, targetNames, null);
+                localResultCache.AddResult(result);
+
+                var errorMessage = CacheSerialization.SerializeCaches(localConfigCache, localResultCache, _requestEntry.Request.OutputCacheFile);
+                if (errorMessage != null)
+                {
+                    _projectLoggingContext.LogErrorFromText(null, null, null, BuildEventFileInfo.Empty, errorMessage);
+                }
+            }
+
+            //_projectLoggingContext.LogWarningFromText(null, null, null, BuildEventFileInfo.Empty, $"RequestEntry OutputCacheFile: {_requestEntry.Request.OutputCacheFile}");
+
             return resultsToReport;
+        }
+
+        private bool UpdateCache(string[] inputCacheFiles)
+        {
+            BuildComponentFactoryCollection _componentFactories = null;
+            if (_componentHost is OutOfProcNode procNode)
+            {
+                _componentFactories = procNode.ComponentFactories;
+            }
+            else if (_componentHost is BuildManager buildManager)
+            {
+                _componentFactories = buildManager.ComponentFactories;
+            }
+            else
+            {
+                return false;
+            }
+
+            if (inputCacheFiles.Length == 0)
+            {
+                return false;
+            }
+
+            if (inputCacheFiles.Any(f => !File.Exists(f)))
+            {
+                _projectLoggingContext.LogError(BuildEventFileInfo.Empty, "InputCacheFilesDoNotExist", string.Join(";", inputCacheFiles.Where(f => !File.Exists(f))));
+                return false;
+            }
+
+            var nextConfigId = int.MaxValue;
+            var cacheAggregator = new CacheAggregator(() => nextConfigId--);
+
+            IConfigCache previousConfigCache = (IConfigCache)_componentHost.GetComponent(BuildComponentType.ConfigCache);
+            IResultsCache previousResultsCache = (IResultsCache)_componentHost.GetComponent(BuildComponentType.ResultsCache);
+
+            foreach (var inputCacheFile in inputCacheFiles)
+            {
+                var (configCache, resultsCache, exception) = CacheSerialization.DeserializeCaches(inputCacheFile);
+
+                if (exception != null)
+                {
+                    _projectLoggingContext.LogError(BuildEventFileInfo.Empty, "ErrorReadingCacheFile", inputCacheFile, exception.Message);
+                    return false;
+                }
+
+                cacheAggregator.Add(configCache, resultsCache);
+            }
+
+            // Aggregate into the previous 
+            cacheAggregator.Aggregate(previousConfigCache, previousResultsCache);
+            return true;
         }
 
         #region IBuildComponent Members

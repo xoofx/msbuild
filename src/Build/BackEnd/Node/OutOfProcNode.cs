@@ -176,6 +176,8 @@ namespace Microsoft.Build.Execution
             (this as INodePacketFactory).RegisterPacketHandler(NodePacketType.ResolveSdkResponse, SdkResult.FactoryForDeserialization, _sdkResolverService as INodePacketHandler);
         }
 
+        internal BuildComponentFactoryCollection ComponentFactories => _componentFactories;
+        
         /// <summary>
         /// Get the logging service for a build.
         /// </summary>

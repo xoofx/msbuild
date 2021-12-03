@@ -14,11 +14,10 @@ namespace Microsoft.Build.Execution
     {
         private readonly Func<int> _nextConfigurationId;
         private readonly List<(IConfigCache ConfigCache, IResultsCache ResultsCache)> _inputCaches = new List<(IConfigCache ConfigCache, IResultsCache ResultsCache)>();
-        private int _lastConfigurationId;
         private bool _aggregated;
 
-        private ConfigCache _aggregatedConfigCache;
-        private ResultsCache _aggregatedResultsCache;
+        private IConfigCache _aggregatedConfigCache;
+        private IResultsCache _aggregatedResultsCache;
 
         public CacheAggregator(Func<int> nextConfigurationId)
         {
@@ -34,21 +33,21 @@ namespace Microsoft.Build.Execution
             _inputCaches.Add((configCache, resultsCache));
         }
 
-        public CacheAggregation Aggregate()
+        public CacheAggregation Aggregate(IConfigCache aggregatedConfigCache = null, IResultsCache aggregatedResultsCache = null)
         {
             ErrorUtilities.VerifyThrow(!_aggregated, "Cannot aggregate twice");
 
             _aggregated = true;
 
-            _aggregatedConfigCache = new ConfigCache();
-            _aggregatedResultsCache = new ResultsCache();
+            _aggregatedConfigCache = aggregatedConfigCache ?? new ConfigCache();
+            _aggregatedResultsCache = aggregatedResultsCache ?? new ResultsCache();
 
             foreach (var (configCache, resultsCache) in _inputCaches)
             {
                 InsertCaches(configCache, resultsCache);
             }
 
-            return new CacheAggregation(_aggregatedConfigCache, _aggregatedResultsCache, _lastConfigurationId);
+            return new CacheAggregation(_aggregatedConfigCache, _aggregatedResultsCache, 0);
         }
 
         private void InsertCaches(IConfigCache configCache, IResultsCache resultsCache)
@@ -64,32 +63,33 @@ namespace Microsoft.Build.Execution
             }
 
             var seenConfigIds = new HashSet<int>();
-            var configIdMapping = new Dictionary<int, int>();
+            var skipConfigs = new HashSet<int>();
 
             foreach (var config in configs)
             {
+                if (_aggregatedConfigCache.GetMatchingConfiguration(config) != null)
+                {
+                    skipConfigs.Add(config.ConfigurationId);
+                    continue;
+                }
+
                 seenConfigIds.Add(config.ConfigurationId);
 
-                ErrorUtilities.VerifyThrow(_aggregatedConfigCache.GetMatchingConfiguration(config) == null, "Input caches should not contain entries for the same configuration");
-
-                _lastConfigurationId = _nextConfigurationId();
-                configIdMapping[config.ConfigurationId] = _lastConfigurationId;
-
-                var newConfig = config.ShallowCloneWithNewId(_lastConfigurationId);
-                newConfig.ResultsNodeId = Scheduler.InvalidNodeId;
-
-                _aggregatedConfigCache.AddConfiguration(newConfig);
+                //ErrorUtilities.VerifyThrow(_aggregatedConfigCache.GetMatchingConfiguration(config) == null, "Input caches should not contain entries for the same configuration");
+                _aggregatedConfigCache.AddConfiguration(config);
             }
 
             foreach (var result in results)
             {
+                if (skipConfigs.Contains(result.ConfigurationId)) continue;
+
                 ErrorUtilities.VerifyThrow(seenConfigIds.Contains(result.ConfigurationId), "Each result should have a corresponding configuration. Otherwise the caches are not consistent");
 
                 _aggregatedResultsCache.AddResult(
                     new BuildResult(
                         result,
                         BuildEventContext.InvalidSubmissionId,
-                        configIdMapping[result.ConfigurationId],
+                        result.ConfigurationId,
                         BuildRequest.InvalidGlobalRequestId,
                         BuildRequest.InvalidGlobalRequestId,
                         BuildRequest.InvalidNodeRequestId

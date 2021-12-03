@@ -304,5 +304,10 @@ namespace Microsoft.Build.Execution
         /// Returns the global properties as a dictionary.
         /// </summary>
         internal PropertyDictionary<ProjectPropertyInstance> GlobalPropertiesDictionary { get; }
+
+
+        public string[] InputCacheFiles { get; set; }
+
+        public string OutputCacheFile { get; set; }
     }
 }

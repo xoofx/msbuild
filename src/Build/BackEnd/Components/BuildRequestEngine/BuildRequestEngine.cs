@@ -365,8 +365,13 @@ namespace Microsoft.Build.BackEnd
                     else
                     {
                         BuildRequestEntry entry = new BuildRequestEntry(request, _configCache[request.ConfigurationId]);
-
                         entry.OnStateChanged += BuildRequestEntry_StateChanged;
+
+                        // Make sure that we mark specify that we work in isolation if input/output cache files are specified
+                        if (!_componentHost.BuildParameters.IsolateProjects && (request.InputCacheFiles != null || request.OutputCacheFile != null))
+                        {
+                            _componentHost.BuildParameters.IsolateProjects = true;
+                        }
 
                         _requests.Add(entry);
                         _requestsByGlobalRequestId[request.GlobalRequestId] = entry;
@@ -1170,7 +1175,7 @@ namespace Microsoft.Build.BackEnd
                             parentRequest: issuingEntry.Request,
                             buildRequestDataFlags: buildRequestDataFlags,
                             requestedProjectState: null,
-                            skipStaticGraphIsolationConstraints: request.SkipStaticGraphIsolationConstraints);
+                            skipStaticGraphIsolationConstraints: request.SkipStaticGraphIsolationConstraints) { InputCacheFiles = issuingEntry.Request.InputCacheFiles, OutputCacheFile = issuingEntry.Request.OutputCacheFile, };
 
                         issuingEntry.WaitForResult(newRequest);
 
@@ -1199,7 +1204,11 @@ namespace Microsoft.Build.BackEnd
                             parentRequest: issuingEntry.Request,
                             buildRequestDataFlags: buildRequestDataFlags,
                             requestedProjectState: null,
-                            skipStaticGraphIsolationConstraints: request.SkipStaticGraphIsolationConstraints);
+                            skipStaticGraphIsolationConstraints: request.SkipStaticGraphIsolationConstraints)
+                        {
+                            InputCacheFiles = issuingEntry.Request.InputCacheFiles,
+                            OutputCacheFile = issuingEntry.Request.OutputCacheFile,
+                        };
 
                         IResultsCache resultsCache = (IResultsCache)_componentHost.GetComponent(BuildComponentType.ResultsCache);
 

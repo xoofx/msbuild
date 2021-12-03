@@ -1655,7 +1655,11 @@ namespace Microsoft.Build.Execution
                 BuildEventContext.Invalid,
                 null,
                 submission.BuildRequestData.Flags,
-                submission.BuildRequestData.RequestedProjectState);
+                submission.BuildRequestData.RequestedProjectState)
+            {
+                InputCacheFiles = submission.BuildRequestData.InputCacheFiles,
+                OutputCacheFile = submission.BuildRequestData.OutputCacheFile,
+            };
         }
 
         private static void AddProxyBuildRequestToSubmission(BuildSubmission submission, int configurationId, ProxyTargets proxyTargets)
@@ -1667,7 +1671,11 @@ namespace Microsoft.Build.Execution
                 proxyTargets,
                 submission.BuildRequestData.HostServices,
                 submission.BuildRequestData.Flags,
-                submission.BuildRequestData.RequestedProjectState);
+                submission.BuildRequestData.RequestedProjectState)
+            {
+                InputCacheFiles = submission.BuildRequestData.InputCacheFiles,
+                OutputCacheFile = submission.BuildRequestData.OutputCacheFile,
+            };
         }
 
         /// <summary>
@@ -3242,5 +3250,6 @@ namespace Microsoft.Build.Execution
 
             #endregion
         }
+        internal BuildComponentFactoryCollection ComponentFactories => _componentFactories;
     }
 }
