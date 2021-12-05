@@ -149,6 +149,7 @@
     <Compile Include="BackEnd\Components\SdkResolution\SdkResolverException.cs" />
     <Compile Include="BackEnd\Components\SdkResolution\TranslationHelpers.cs" />
     <Compile Include="FileSystem\*.cs" />
+    <Compile Include="Definition\ProjectCollectionRootElementCache.cs" />
     <Compile Include="Graph\GraphBuildCacheFilePathDelegate.cs" />
     <Compile Include="Graph\ProjectGraphNodeDirection.cs" />
     <Compile Include="Graph\ProjectGraphVisitor.cs" />
