@@ -1005,6 +1005,84 @@ namespace Microsoft.Build.Execution
         }
 
         /// <summary>
+        /// Load results from cached files.
+        /// </summary>
+        /// <param name="cacheFiles"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public Dictionary<BuildRequestData, BuildResult> LoadCachedResults(string[] cacheFiles)
+        {
+            ErrorUtilities.VerifyThrowArgumentNull(cacheFiles, nameof(cacheFiles));
+
+            if (_scheduler != null)
+            {
+                throw new InvalidOperationException("This method must be called before calling any other methods");
+            }
+
+            if (_configCache == null)
+            {
+                _configCache = ((IBuildComponentHost)this).GetComponent(BuildComponentType.ConfigCache) as IConfigCache;
+                _resultsCache = ((IBuildComponentHost)this).GetComponent(BuildComponentType.ResultsCache) as IResultsCache;
+            }
+            else
+            {
+                if (_configCache.Any() || _resultsCache.Any())
+                {
+                    throw new InvalidOperationException("Cache must be empty before calling this method");
+                }
+            }
+
+            lock (_syncLock)
+            {
+                var configIds = new HashSet<int>();
+                var configAndResults = new List<(BuildRequestConfiguration, BuildResult)>();
+
+                foreach (var file in cacheFiles)
+                {
+                    var (configCache, resultsCache, exception) = CacheSerialization.DeserializeCaches(file);
+
+                    var configCount = configCache.Count();
+                    var resultsCount = resultsCache.Count();
+                    if (configCount != 1 || configCount != resultsCount)
+                    {
+                        throw new InvalidOperationException("Invalid cache");
+                    }
+
+                    var result = resultsCache.First();
+                    var config = configCache[result.ConfigurationId];
+
+                    configAndResults.Add((config, result));
+                    if (!configIds.Add(config.ConfigurationId))
+                    {
+                        throw new InvalidOperationException($"The file {file} has a duplicate configuration id {config.ConfigurationId}");
+                    }
+                }
+
+                var results = new Dictionary<BuildRequestData, BuildResult>();
+                var previousConfigId = 0;
+                foreach (var (config, result) in configAndResults.OrderBy(x => x.Item1.ConfigurationId))
+                {
+                    _configCache.AddConfiguration(config);
+
+                    var buildRequestData = new BuildRequestData(config.ProjectFullPath,
+                        config.GlobalProperties.ToDictionary(),
+                        config.ToolsVersion,
+                        config.TargetNames != null ? config.TargetNames.ToArray() : Array.Empty<string>(), null);
+
+                    results.Add(buildRequestData, result);
+
+                    var currentConfigId = Interlocked.CompareExchange(ref s_nextBuildRequestConfigurationId,
+                        config.ConfigurationId,
+                        previousConfigId);
+                    ErrorUtilities.VerifyThrow(currentConfigId == previousConfigId, "The next configurationId cannot be updated while loading cached results.");
+
+                    previousConfigId = config.ConfigurationId;
+                }
+                return results;
+            }
+        }
+
+        /// <summary>
         /// Shuts down all idle MSBuild nodes on the machine
         /// </summary>
         public void ShutdownAllNodes()
@@ -2056,13 +2134,6 @@ namespace Microsoft.Build.Execution
                                 buildingNodes.Remove(finishedBuildSubmission);
 
                                 resultsPerNode.Add(finishedNode, finishedBuildSubmission.BuildResult);
-
-                                // TODO: Do we want to cache results?
-                                //// If we are handling cache, we store 
-                                //if (getResultsCacheFilePath != null)
-                                //{
-                                //    _resultsCache.AddResult(finishedBuildSubmission.BuildResult);
-                                //}
                             }
 
                             waitHandle.Set();
