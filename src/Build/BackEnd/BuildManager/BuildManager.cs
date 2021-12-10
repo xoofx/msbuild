@@ -1005,19 +1005,17 @@ namespace Microsoft.Build.Execution
         }
 
         /// <summary>
-        /// Load results from cached files.
+        /// Load results from cached files. This method should be called only right after creating a <see cref="BuildManager"/>.
         /// </summary>
-        /// <param name="cacheFiles"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <param name="cacheFiles">An array of paths to cache files.</param>
+        /// <returns>The results loaded from cached files.</returns>
         public Dictionary<BuildRequestData, BuildResult> LoadCachedResults(string[] cacheFiles)
         {
             ErrorUtilities.VerifyThrowArgumentNull(cacheFiles, nameof(cacheFiles));
 
-            if (_scheduler != null || s_nextBuildRequestConfigurationId != 0)
-            {
-                throw new InvalidOperationException("This method must be called before calling any other methods");
-            }
+            ErrorUtilities.VerifyThrow(
+                _scheduler == null && s_nextBuildRequestConfigurationId == 0,
+                "This method must be called before calling any other methods");
 
             if (_configCache == null)
             {
@@ -1026,10 +1024,9 @@ namespace Microsoft.Build.Execution
             }
             else
             {
-                if (_configCache.Any() || _resultsCache.Any())
-                {
-                    throw new InvalidOperationException("Cache must be empty before calling this method");
-                }
+                ErrorUtilities.VerifyThrow(
+                    !_configCache.Any() && !_resultsCache.Any(),
+                    "Cache must be empty before calling this method");
             }
 
             lock (_syncLock)
@@ -1045,17 +1042,16 @@ namespace Microsoft.Build.Execution
                     var resultsCount = resultsCache.Count();
                     if (configCount != 1 || configCount != resultsCount)
                     {
-                        throw new InvalidOperationException("Invalid cache");
+                        ErrorUtilities.VerifyThrow(configCount == 1 && configCount == resultsCount,
+                            $"Invalid cache size. Expecting only 1 entry for both config and results but got {configCount} configs and {resultsCount} results.");
                     }
 
                     var result = resultsCache.First();
                     var config = configCache[result.ConfigurationId];
 
                     configAndResults.Add((config, result));
-                    if (!configIds.Add(config.ConfigurationId))
-                    {
-                        throw new InvalidOperationException($"The file {file} has a duplicate configuration id {config.ConfigurationId}");
-                    }
+                    var configAdded = configIds.Add(config.ConfigurationId);
+                    ErrorUtilities.VerifyThrow(configAdded, $"The file {file} has a duplicate configuration id {config.ConfigurationId}");
                 }
 
                 var results = new Dictionary<BuildRequestData, BuildResult>();
@@ -1746,7 +1742,8 @@ namespace Microsoft.Build.Execution
             };
         }
 
-        private static void AddProxyBuildRequestToSubmission(
+  
+      private static void AddProxyBuildRequestToSubmission(
             BuildSubmission submission,
             int configurationId,
             ProxyTargets proxyTargets,
