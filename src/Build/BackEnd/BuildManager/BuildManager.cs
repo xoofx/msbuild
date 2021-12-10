@@ -1014,7 +1014,7 @@ namespace Microsoft.Build.Execution
         {
             ErrorUtilities.VerifyThrowArgumentNull(cacheFiles, nameof(cacheFiles));
 
-            if (_scheduler != null)
+            if (_scheduler != null || s_nextBuildRequestConfigurationId != 0)
             {
                 throw new InvalidOperationException("This method must be called before calling any other methods");
             }
