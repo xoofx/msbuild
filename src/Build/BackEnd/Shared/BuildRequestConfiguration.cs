@@ -455,6 +455,10 @@ namespace Microsoft.Build.BackEnd
                 // Use different project load settings if the build request indicates to do so
                 ProjectLoadSettings projectLoadSettings = componentHost.BuildParameters.ProjectLoadSettings;
 
+                // Always record EvaluatedItemElements during to allow internal usage in a build.
+                // This should not have a performance impact compare to expanded items.
+                projectLoadSettings |= ProjectLoadSettings.RecordEvaluatedItemElements;
+
                 if (buildRequestDataFlags.HasFlag(BuildRequestDataFlags.IgnoreMissingEmptyAndInvalidImports))
                 {
                     projectLoadSettings |= ProjectLoadSettings.IgnoreMissingImports | ProjectLoadSettings.IgnoreInvalidImports | ProjectLoadSettings.IgnoreEmptyImports;
