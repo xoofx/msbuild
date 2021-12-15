@@ -15,6 +15,7 @@ Microsoft.Build.Execution.ProjectImportInstance.LastWriteTimeWhenRead.get -> Sys
 Microsoft.Build.Execution.ProjectImportInstance.ProjectImportInstance() -> void
 Microsoft.Build.Execution.ProjectImportInstance.ProjectImportInstance(string fullPath, System.DateTime lastWriteTimeWhenRead) -> void
 Microsoft.Build.Execution.ProjectInstance.Imports.get -> System.Collections.Generic.IReadOnlyList<Microsoft.Build.Execution.ProjectImportInstance>
+Microsoft.Build.Execution.ProjectInstance.ProjectInstance(Microsoft.Build.Construction.ProjectRootElement xml, System.Collections.Generic.IDictionary<string, string> globalProperties, string toolsVersion, string subToolsetVersion, Microsoft.Build.Evaluation.ProjectCollection projectCollection, Microsoft.Build.Evaluation.ProjectLoadSettings? projectLoadSettings) -> void
 Microsoft.Build.Experimental.ProjectCache.PluginLoggerBase.PluginLoggerBase() -> void
 Microsoft.Build.FileSystem.FindPredicate
 Microsoft.Build.FileSystem.FindTransform<TResult>

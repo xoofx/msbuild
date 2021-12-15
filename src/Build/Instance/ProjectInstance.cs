@@ -323,7 +323,27 @@ namespace Microsoft.Build.Execution
         /// <param name="projectCollection">Project collection</param>
         /// <returns>A new project instance</returns>
         public ProjectInstance(ProjectRootElement xml, IDictionary<string, string> globalProperties, string toolsVersion, string subToolsetVersion, ProjectCollection projectCollection)
-            : this(xml, globalProperties, toolsVersion, subToolsetVersion, projectCollection, projectLoadSettings: null, evaluationContext: null)
+            : this(xml, globalProperties, toolsVersion, subToolsetVersion, projectCollection, null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a ProjectInstance directly.
+        /// No intermediate Project object is created.
+        /// This is ideal if the project is simply going to be built, and not displayed or edited.
+        /// Global properties may be null.
+        /// Tools version may be null.
+        /// Sub-toolset version may be null, but if specified will override all other methods of determining the sub-toolset.
+        /// </summary>
+        /// <param name="xml">The project root element</param>
+        /// <param name="globalProperties">The global properties to use.</param>
+        /// <param name="toolsVersion">The tools version.</param>
+        /// <param name="subToolsetVersion">The sub-toolset version, used in tandem with the ToolsVersion to determine the set of toolset properties.</param>
+        /// <param name="projectCollection">Project collection</param>
+        /// <param name="projectLoadSettings">Project load settings</param>
+        /// <returns>A new project instance</returns>
+        public ProjectInstance(ProjectRootElement xml, IDictionary<string, string> globalProperties, string toolsVersion, string subToolsetVersion, ProjectCollection projectCollection, ProjectLoadSettings? projectLoadSettings)
+            : this(xml, globalProperties, toolsVersion, subToolsetVersion, projectCollection, projectLoadSettings: projectLoadSettings, evaluationContext: null)
         {
         }
 
