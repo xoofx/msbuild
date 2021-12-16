@@ -2095,12 +2095,13 @@ namespace Microsoft.Build.Execution
                         }
 
                         var request = new BuildRequestData(
-                            node.ProjectInstance,
+                            node.ProjectInstance.FullPath,
+                            node.ProjectInstance.GlobalProperties,
+                            node.ProjectInstance.ToolsVersion,
                             targetList.ToArray(),
                             graphBuildRequestData.HostServices,
                             graphBuildRequestData.Flags);
-
-
+                        
                         if (getResultsCacheFilePath != null)
                         {
                             request.OutputResultsCacheFile = getResultsCacheFilePath(node);
