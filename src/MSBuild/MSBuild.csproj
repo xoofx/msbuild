@@ -5,7 +5,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>$(RuntimeOutputTargetFrameworks)</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <PlatformTarget>$(RuntimeOutputPlatformTarget)</PlatformTarget>
     <!-- MSBuild.csproj no longer uses apphost. This fixes an issue where certain tests would find
          MSBuild.exe AND MSBuild.dll when they should only find MSBuild.dll. -->
