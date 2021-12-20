@@ -17,7 +17,6 @@
     <PackageReference Update="Microsoft.Win32.Registry" Version="4.3.0" />
     <PackageReference Update="NuGet.Build.Tasks" Version="$(NuGetBuildTasksVersion)" />
     <PackageReference Update="NuGet.Frameworks" Version="$(NuGetBuildTasksVersion)" />
-    <PackageReference Update="NuGet.Versioning" Version="$(NuGetBuildTasksVersion)" />
     <PackageReference Update="System.CodeDom" Version="4.4.0" />
     <PackageReference Update="System.Collections.Immutable" Version="5.0.0" />
     <PackageReference Update="System.Configuration.ConfigurationManager" Version="4.7.0" />
@@ -36,6 +35,5 @@
     <PackageReference Update="xunit.assert" Version="$(XUnitVersion)" />
     <PackageReference Update="xunit.console" Version="$(XUnitVersion)" />
     <PackageReference Update="xunit.core" Version="$(XUnitVersion)" />
-    <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 </Project>
